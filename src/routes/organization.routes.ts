@@ -50,10 +50,11 @@ router.get(
   organizationController.testAccess,
 );
 
-// 4. Get Organization by ID
+// 4. Get Organization by ID (only members of this organization can view it)
 router.get(
   '/:organizationId',
   authenticate(authTokenService),
+  accessToOrgUser([OrgRole.ADMIN, OrgRole.EDITOR, OrgRole.VIEWER]),
   organizationController.getOrganizationById,
 );
 

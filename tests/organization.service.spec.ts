@@ -148,4 +148,26 @@ describe('OrganizationService', () => {
     expect(result[2]!.organization_id).toBe('org-3');
     expect(result[2]!.role).toBe(OrgRole.VIEWER);
   });
+
+  it('strictly isolates organizations by user_id so user-2 never sees user-1 organizations', async () => {
+    (userOrgRepo.findByUserId as any).mockImplementation((uid: string) => {
+      if (uid === 'user-1') {
+        return Promise.resolve([
+          new UserOrganization('uo-1', 'user-1', 'org-1', OrgRole.ADMIN, true),
+        ]);
+      }
+      return Promise.resolve([]);
+    });
+
+    const org1 = new Organization('org-1', 'Private Corp', 'private-corp');
+    (orgRepo.findByIds as any).mockResolvedValue([org1]);
+
+    const user1Result = await service.getUserOrganizations('user-1');
+    expect(user1Result).toHaveLength(1);
+    expect(user1Result[0]!.name).toBe('Private Corp');
+
+    const user2Result = await service.getUserOrganizations('user-2');
+    expect(user2Result).toHaveLength(0);
+    expect(userOrgRepo.findByUserId).toHaveBeenCalledWith('user-2');
+  });
 });
