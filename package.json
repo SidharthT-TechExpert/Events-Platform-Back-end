@@ -12,6 +12,7 @@
     "start": "node --env-file-if-exists=.env dist/server.js",
     "test": "vitest",
     "test:run": "vitest run",
+    "seed:org": "tsx --env-file-if-exists=.env scripts/create-organization.ts",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },

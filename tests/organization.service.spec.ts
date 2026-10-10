@@ -1,0 +1,129 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { OrganizationService } from '../src/services/organization/organization.service.js';
+import { Organization } from '../src/domain/entities/organization.entity.js';
+import { UserOrganization } from '../src/domain/entities/user-organization.entity.js';
+import { User } from '../src/domain/entities/user.entity.js';
+import { OrgRole } from '../src/domain/enums/org-role.enum.js';
+import { UserRole } from '../src/domain/enums/user-role.enum.js';
+import type { IOrganizationRepository } from '../src/repositories/interfaces/organization.repository.interface.js';
+import type { IUserOrganizationRepository } from '../src/repositories/interfaces/user-organization.repository.interface.js';
+import type { IUserRepository } from '../src/repositories/interfaces/user.repository.interface.js';
+import type { IUnitOfWork } from '../src/infrastructure/unit-of-work/unit-of-work.interface.js';
+
+describe('OrganizationService', () => {
+  let orgRepo: Partial<IOrganizationRepository>;
+  let userOrgRepo: Partial<IUserOrganizationRepository>;
+  let userRepo: Partial<IUserRepository>;
+  let uow: IUnitOfWork;
+  let service: OrganizationService;
+
+  const mockUser = new User(
+    'user-1',
+    'Sidharth T',
+    '8848096746',
+    'hashedpass',
+    'sidhartht900@gmail.com',
+    null,
+    null,
+    true,
+    false,
+    UserRole.USER,
+  );
+
+  beforeEach(() => {
+    orgRepo = {
+      create: vi.fn().mockImplementation((org: Organization) =>
+        Promise.resolve(
+          new Organization(
+            'org-1',
+            org.name,
+            org.slug,
+            org.description,
+            org.email,
+            org.phone,
+            org.website,
+            org.logo_key,
+            org.is_active,
+            org.created_at,
+            org.updated_at,
+          ),
+        ),
+      ),
+      findBySlug: vi.fn().mockResolvedValue(null),
+      findById: vi.fn(),
+      findByIds: vi.fn(),
+    };
+
+    userOrgRepo = {
+      create: vi.fn().mockImplementation((uo: UserOrganization) =>
+        Promise.resolve(
+          new UserOrganization(
+            'uo-1',
+            uo.user_id,
+            uo.organization_id,
+            uo.role,
+            uo.is_active,
+            uo.joined_at,
+            uo.created_at,
+            uo.updated_at,
+          ),
+        ),
+      ),
+      findByUserId: vi.fn(),
+      findByUserAndOrganization: vi.fn(),
+    };
+
+    userRepo = {
+      findById: vi.fn().mockResolvedValue(mockUser),
+    };
+
+    uow = {
+      execute: vi.fn().mockImplementation((op) => op({} as any)),
+    };
+
+    service = new OrganizationService(
+      orgRepo as IOrganizationRepository,
+      userOrgRepo as IUserOrganizationRepository,
+      userRepo as IUserRepository,
+      uow,
+    );
+  });
+
+  it('creates an organization and assigns creator as ADMIN in UserOrganization', async () => {
+    const result = await service.createOrganization('user-1', {
+      name: 'Future Club',
+      description: 'Official Club',
+    });
+
+    expect(result.organization.name).toBe('Future Club');
+    expect(result.organization.slug).toBe('future-club');
+    expect(result.role).toBe(OrgRole.ADMIN);
+    expect(userOrgRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-1',
+        role: OrgRole.ADMIN,
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('returns all organizations that user belongs to with role', async () => {
+    const userOrgs = [
+      new UserOrganization('uo-1', 'user-1', 'org-1', OrgRole.ADMIN, true),
+      new UserOrganization('uo-2', 'user-1', 'org-2', OrgRole.EDITOR, true),
+    ];
+    (userOrgRepo.findByUserId as any).mockResolvedValue(userOrgs);
+
+    const org1 = new Organization('org-1', 'Future Club', 'future-club');
+    const org2 = new Organization('org-2', 'Dev Group', 'dev-group');
+    (orgRepo.findByIds as any).mockResolvedValue([org1, org2]);
+
+    const result = await service.getUserOrganizations('user-1');
+
+    expect(result).toHaveLength(2);
+    expect(result[0]!.organization.name).toBe('Future Club');
+    expect(result[0]!.role).toBe(OrgRole.ADMIN);
+    expect(result[1]!.organization.name).toBe('Dev Group');
+    expect(result[1]!.role).toBe(OrgRole.EDITOR);
+  });
+});

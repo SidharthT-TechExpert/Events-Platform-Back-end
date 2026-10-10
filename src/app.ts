@@ -5,6 +5,7 @@ import { errorHandler } from '@/middleware/error-handler.js';
 import { notFoundHandler } from '@/middleware/not-found.js';
 import { successResponse } from '@/shared/types/api-response.js';
 import authRoutes from '@/routes/auth.routes.js';
+import organizationRoutes from '@/routes/organization.routes.js';
 
 export const app = express();
 
@@ -17,6 +18,8 @@ app.get('/health', (_request, response) => {
 });
 
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/organizations', organizationRoutes);
+app.use('/organization', organizationRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
