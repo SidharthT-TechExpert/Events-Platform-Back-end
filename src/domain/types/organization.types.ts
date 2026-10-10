@@ -20,6 +20,8 @@ export interface AddUserToOrganizationInput {
 
 export interface UserOrganizationDetails {
   id: string;
+  user_id: string;
+  organization_id: string;
   role: OrgRole;
   is_active: boolean;
   joined_at: Date;

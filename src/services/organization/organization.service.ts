@@ -118,6 +118,8 @@ export class OrganizationService implements IOrganizationService {
       if (org) {
         result.push({
           id: uo.id,
+          user_id: uo.user_id,
+          organization_id: uo.organization_id,
           role: uo.role,
           is_active: uo.is_active,
           joined_at: uo.joined_at,
