@@ -61,53 +61,93 @@ async function run(): Promise<void> {
       console.log(`Updated user: ${userDoc._id.toString()} successfully.`);
     }
 
-    // 2. Create or find Organization
-    console.log(`\nChecking organization: name="${ORG_NAME}", slug="${ORG_SLUG}"...`);
-    let orgDoc = await OrganizationModel.findOne({
-      $or: [{ slug: ORG_SLUG }, { name: ORG_NAME }],
-    });
+    // 2. Define multiple organizations to seed with distinct roles
+    const orgsToSeed = [
+      {
+        name: process.argv[2] ?? 'Future Club',
+        slug:
+          process.argv[3] ??
+          (process.argv[2] ?? 'Future Club')
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)+/g, ''),
+        description: 'Official Future Club events organization',
+        role: OrgRole.ADMIN,
+      },
+      {
+        name: 'Where Is My Event',
+        slug: 'where-is-my-event',
+        description: 'Where Is My Event global organization',
+        role: OrgRole.EDITOR,
+      },
+      {
+        name: 'Kerala Tech Community',
+        slug: 'kerala-tech-community',
+        description: 'Kerala regional tech community organization',
+        role: OrgRole.VIEWER,
+      },
+    ];
 
-    if (!orgDoc) {
-      console.log('Organization does not exist. Creating new organization...');
-      orgDoc = await OrganizationModel.create({
-        name: ORG_NAME,
-        slug: ORG_SLUG,
-        description: `${ORG_NAME} official events organization`,
-        email: USER_EMAIL,
-        phone: USER_PHONE,
-        is_active: true,
+    console.log('\n--- Seeding Organizations and User Memberships ---');
+    const seededList = [];
+
+    for (const orgData of orgsToSeed) {
+      let orgDoc = await OrganizationModel.findOne({
+        $or: [{ slug: orgData.slug }, { name: orgData.name }],
       });
-      console.log(`Created organization: ${orgDoc._id.toString()} (${orgDoc.name})`);
-    } else {
-      console.log(`Organization already exists: ${orgDoc._id.toString()} (${orgDoc.name})`);
-    }
 
-    // 3. Link User to Organization as ADMIN in UserOrganization table
-    console.log(`\nLinking user ${userDoc._id.toString()} to org ${orgDoc._id.toString()}...`);
-    let userOrgDoc = await UserOrganizationModel.findOne({
-      user_id: userDoc._id,
-      organization_id: orgDoc._id,
-    });
+      if (!orgDoc) {
+        orgDoc = await OrganizationModel.create({
+          name: orgData.name,
+          slug: orgData.slug,
+          description: orgData.description,
+          email: USER_EMAIL,
+          phone: USER_PHONE,
+          is_active: true,
+        });
+        console.log(`Created organization: ${orgDoc.name} (${orgDoc._id.toString()})`);
+      } else {
+        console.log(`Organization exists: ${orgDoc.name} (${orgDoc._id.toString()})`);
+      }
 
-    if (!userOrgDoc) {
-      userOrgDoc = await UserOrganizationModel.create({
+      let userOrgDoc = await UserOrganizationModel.findOne({
         user_id: userDoc._id,
         organization_id: orgDoc._id,
-        role: OrgRole.ADMIN,
-        is_active: true,
-        joined_at: new Date(),
       });
-      console.log(`Created UserOrganization record: ${userOrgDoc._id.toString()} with role ADMIN`);
-    } else {
-      userOrgDoc.role = OrgRole.ADMIN;
-      userOrgDoc.is_active = true;
-      await userOrgDoc.save();
-      console.log(`Updated existing UserOrganization record: ${userOrgDoc._id.toString()} with role ADMIN`);
+
+      if (!userOrgDoc) {
+        userOrgDoc = await UserOrganizationModel.create({
+          user_id: userDoc._id,
+          organization_id: orgDoc._id,
+          role: orgData.role,
+          is_active: true,
+          joined_at: new Date(),
+        });
+        console.log(`-> Linked user as ${orgData.role} in ${orgDoc.name}`);
+      } else {
+        userOrgDoc.role = orgData.role;
+        userOrgDoc.is_active = true;
+        await userOrgDoc.save();
+        console.log(`-> Updated user membership to ${orgData.role} in ${orgDoc.name}`);
+      }
+
+      seededList.push({
+        orgId: orgDoc._id.toString(),
+        orgName: orgDoc.name,
+        slug: orgDoc.slug,
+        role: userOrgDoc.role,
+        userOrgId: userOrgDoc._id.toString(),
+      });
     }
 
-    // 4. Generate demo tokens if secrets are present
-    const accessSecret = process.env['ACCESS_TOKEN_SECRET'] ?? 'futureclub_events_platform_access_token_secret_2026_jwt';
-    const refreshSecret = process.env['REFRESH_TOKEN_SECRET'] ?? 'futureclub_events_platform_refresh_token_secret_2026_jwt';
+    // 3. Generate demo tokens if secrets are present
+    const accessSecret =
+      process.env['ACCESS_TOKEN_SECRET'] ??
+      'futureclub_events_platform_access_token_secret_2026_jwt';
+    const refreshSecret =
+      process.env['REFRESH_TOKEN_SECRET'] ??
+      'futureclub_events_platform_refresh_token_secret_2026_jwt';
     process.env['ACCESS_TOKEN_SECRET'] = accessSecret;
     process.env['REFRESH_TOKEN_SECRET'] = refreshSecret;
 
@@ -131,11 +171,10 @@ async function run(): Promise<void> {
     console.log('User Email:        ', userDoc.email);
     console.log('User Phone:        ', userDoc.phone);
     console.log('User Password:     ', USER_RAW_PASS);
-    console.log('Organization ID:   ', orgDoc._id.toString());
-    console.log('Organization Name: ', orgDoc.name);
-    console.log('Organization Slug: ', orgDoc.slug);
-    console.log('User Role in Org:  ', userOrgDoc.role);
-    console.log('UserOrg ID:        ', userOrgDoc._id.toString());
+    console.log('\nUser Organizations & Different Roles:');
+    for (const item of seededList) {
+      console.log(` - [${item.role}] ${item.orgName} (Org ID: ${item.orgId}, Slug: ${item.slug})`);
+    }
     console.log('\nSample Access Token (Bearer):');
     console.log(tokens.accessToken);
     console.log('=========================================\n');

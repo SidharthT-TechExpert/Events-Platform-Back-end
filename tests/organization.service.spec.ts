@@ -107,20 +107,24 @@ describe('OrganizationService', () => {
     );
   });
 
-  it('returns all organizations that user belongs to with role', async () => {
+  it('returns all organizations that user belongs to with distinct roles (ADMIN, EDITOR, VIEWER)', async () => {
     const userOrgs = [
       new UserOrganization('uo-1', 'user-1', 'org-1', OrgRole.ADMIN, true),
       new UserOrganization('uo-2', 'user-1', 'org-2', OrgRole.EDITOR, true),
+      new UserOrganization('uo-3', 'user-1', 'org-3', OrgRole.VIEWER, true),
     ];
     (userOrgRepo.findByUserId as any).mockResolvedValue(userOrgs);
 
     const org1 = new Organization('org-1', 'Future Club', 'future-club');
-    const org2 = new Organization('org-2', 'Dev Group', 'dev-group');
-    (orgRepo.findByIds as any).mockResolvedValue([org1, org2]);
+    const org2 = new Organization('org-2', 'Where Is My Event', 'where-is-my-event');
+    const org3 = new Organization('org-3', 'Kerala Tech Community', 'kerala-tech-community');
+    (orgRepo.findByIds as any).mockResolvedValue([org1, org2, org3]);
 
     const result = await service.getUserOrganizations('user-1');
 
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(3);
+
+    // Organization 1: ADMIN
     expect(result[0]!.organization.name).toBe('Future Club');
     expect(result[0]!.name).toBe('Future Club');
     expect(result[0]!.slug).toBe('future-club');
@@ -128,11 +132,20 @@ describe('OrganizationService', () => {
     expect(result[0]!.organization_id).toBe('org-1');
     expect(result[0]!.role).toBe(OrgRole.ADMIN);
 
-    expect(result[1]!.organization.name).toBe('Dev Group');
-    expect(result[1]!.name).toBe('Dev Group');
-    expect(result[1]!.slug).toBe('dev-group');
+    // Organization 2: EDITOR
+    expect(result[1]!.organization.name).toBe('Where Is My Event');
+    expect(result[1]!.name).toBe('Where Is My Event');
+    expect(result[1]!.slug).toBe('where-is-my-event');
     expect(result[1]!.user_id).toBe('user-1');
     expect(result[1]!.organization_id).toBe('org-2');
     expect(result[1]!.role).toBe(OrgRole.EDITOR);
+
+    // Organization 3: VIEWER
+    expect(result[2]!.organization.name).toBe('Kerala Tech Community');
+    expect(result[2]!.name).toBe('Kerala Tech Community');
+    expect(result[2]!.slug).toBe('kerala-tech-community');
+    expect(result[2]!.user_id).toBe('user-1');
+    expect(result[2]!.organization_id).toBe('org-3');
+    expect(result[2]!.role).toBe(OrgRole.VIEWER);
   });
 });
