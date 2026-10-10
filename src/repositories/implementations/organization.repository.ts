@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import type { ClientSession } from 'mongoose';
+import { Types, type ClientSession } from 'mongoose';
 import { BaseRepository } from './base.repository.js';
 import type { IOrganizationRepository } from '../interfaces/organization.repository.interface.js';
 import { OrganizationMapper } from '../mappers/organization.mapper.js';
@@ -28,6 +28,7 @@ export class OrganizationRepository
 
   async findByIds(ids: string[], session?: ClientSession): Promise<Organization[]> {
     if (ids.length === 0) return [];
-    return this.find({ _id: { $in: ids } }, session);
+    const objectIds = ids.map((id) => (Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : id));
+    return this.find({ _id: { $in: objectIds } }, session);
   }
 }

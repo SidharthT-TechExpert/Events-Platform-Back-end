@@ -123,6 +123,17 @@ export class OrganizationService implements IOrganizationService {
           role: uo.role,
           is_active: uo.is_active,
           joined_at: uo.joined_at,
+
+          name: org.name,
+          slug: org.slug,
+          description: org.description,
+          email: org.email,
+          phone: org.phone,
+          website: org.website,
+          logo_key: org.logo_key,
+          created_at: org.created_at,
+          updated_at: org.updated_at,
+
           organization: org.toPublicJson(),
         });
       }

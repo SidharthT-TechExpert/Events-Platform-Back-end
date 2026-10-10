@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import type { ClientSession } from 'mongoose';
+import { Types, type ClientSession } from 'mongoose';
 import { BaseRepository } from './base.repository.js';
 import type { IUserOrganizationRepository } from '../interfaces/user-organization.repository.interface.js';
 import { UserOrganizationMapper } from '../mappers/user-organization.mapper.js';
@@ -23,17 +23,25 @@ export class UserOrganizationRepository
     organizationId: string,
     session?: ClientSession,
   ): Promise<UserOrganization | null> {
-    return this.findOne({ user_id: userId, organization_id: organizationId }, session);
+    const userQuery = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
+    const orgQuery = Types.ObjectId.isValid(organizationId)
+      ? new Types.ObjectId(organizationId)
+      : organizationId;
+    return this.findOne({ user_id: userQuery, organization_id: orgQuery }, session);
   }
 
   async findByUserId(userId: string, session?: ClientSession): Promise<UserOrganization[]> {
-    return this.find({ user_id: userId }, session);
+    const userQuery = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : userId;
+    return this.find({ user_id: userQuery }, session);
   }
 
   async findByOrganizationId(
     organizationId: string,
     session?: ClientSession,
   ): Promise<UserOrganization[]> {
-    return this.find({ organization_id: organizationId }, session);
+    const orgQuery = Types.ObjectId.isValid(organizationId)
+      ? new Types.ObjectId(organizationId)
+      : organizationId;
+    return this.find({ organization_id: orgQuery }, session);
   }
 }

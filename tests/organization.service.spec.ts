@@ -122,8 +122,17 @@ describe('OrganizationService', () => {
 
     expect(result).toHaveLength(2);
     expect(result[0]!.organization.name).toBe('Future Club');
+    expect(result[0]!.name).toBe('Future Club');
+    expect(result[0]!.slug).toBe('future-club');
+    expect(result[0]!.user_id).toBe('user-1');
+    expect(result[0]!.organization_id).toBe('org-1');
     expect(result[0]!.role).toBe(OrgRole.ADMIN);
+
     expect(result[1]!.organization.name).toBe('Dev Group');
+    expect(result[1]!.name).toBe('Dev Group');
+    expect(result[1]!.slug).toBe('dev-group');
+    expect(result[1]!.user_id).toBe('user-1');
+    expect(result[1]!.organization_id).toBe('org-2');
     expect(result[1]!.role).toBe(OrgRole.EDITOR);
   });
 });
