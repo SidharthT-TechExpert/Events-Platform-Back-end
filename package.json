@@ -12,6 +12,7 @@
     "start": "node --env-file-if-exists=.env dist/server.js",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:api": "tsx --env-file-if-exists=.env scripts/verify-api.ts",
     "seed:org": "tsx --env-file-if-exists=.env scripts/create-organization.ts",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
@@ -35,6 +36,7 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.0",
+    "morgan": "^1.12.1",
     "reflect-metadata": "^0.2.2",
     "zod": "^4.6.5"
   },
@@ -42,6 +44,7 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
     "@types/node": "^26.6.4",
     "prettier": "^3.9.9",
     "tsc-alias": "^1.9.7",

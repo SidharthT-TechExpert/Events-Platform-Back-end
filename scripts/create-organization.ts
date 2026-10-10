@@ -7,9 +7,10 @@ import { OrgRole } from '../src/domain/enums/org-role.enum.js';
 import { hashPassword } from '../src/shared/utils/password.util.js';
 import { AuthTokenService } from '../src/services/auth/auth-token.service.js';
 
-const MONGODB_URI =
-  process.env['MONGODB_URI'] ??
-  'mongodb+srv://futureclub26_db_user:D6X9MiSpp1VyJr9c@whereismyevent.nkzljip.mongodb.net';
+const MONGODB_URI = process.env['MONGODB_URI'];
+if (!MONGODB_URI) {
+  throw new Error('MONGODB_URI environment variable must be configured in .env');
+}
 
 const USER_EMAIL = 'sidhartht900@gmail.com';
 const USER_PHONE = '8848096746';
@@ -131,6 +132,23 @@ async function run(): Promise<void> {
         await userOrgDoc.save();
         console.log(`-> Updated user membership to ${orgData.role} in ${orgDoc.name}`);
       }
+
+      // Ensure organization document has members field updated with proper role
+      const memberIndex = orgDoc.members.findIndex(
+        (m) => m.user_id.toString() === userDoc._id.toString(),
+      );
+      if (memberIndex >= 0 && orgDoc.members[memberIndex]) {
+        orgDoc.members[memberIndex].role = orgData.role;
+        orgDoc.members[memberIndex].is_active = true;
+      } else {
+        orgDoc.members.push({
+          user_id: userDoc._id,
+          role: orgData.role,
+          is_active: true,
+          joined_at: new Date(),
+        });
+      }
+      await orgDoc.save();
 
       seededList.push({
         orgId: orgDoc._id.toString(),

@@ -20,13 +20,24 @@ export interface AddUserToOrganizationInput {
 
 export interface UserOrganizationDetails {
   id: string;
-  user_id: string;
   organization_id: string;
   role: OrgRole;
   is_active: boolean;
-  joined_at: Date;
+  name: string;
+  slug: string;
+  description: string | null;
+  logo_key: string | null;
+}
 
-  // Full organization details
+export interface OrganizationMemberDetail {
+  id: string;
+  fullname: string;
+  role: OrgRole;
+  is_active: boolean;
+}
+
+export interface OrganizationWithMembersDetails {
+  id: string;
   name: string;
   slug: string;
   description: string | null;
@@ -34,9 +45,8 @@ export interface UserOrganizationDetails {
   phone: string | null;
   website: string | null;
   logo_key: string | null;
+  is_active: boolean;
+  members: OrganizationMemberDetail[];
   created_at: Date;
   updated_at: Date;
-
-  // Also available as nested object
-  organization: ReturnType<Organization['toPublicJson']>;
 }

@@ -15,6 +15,8 @@ import type {
   CreateOrganizationInput,
   AddUserToOrganizationInput,
   UserOrganizationDetails,
+  OrganizationWithMembersDetails,
+  OrganizationMemberDetail,
 } from '@/domain/types/organization.types.js';
 import { BadRequestError, ConflictError, NotFoundError } from '@/shared/errors/app-error.js';
 import { RESPONSE_MESSAGE } from '@/shared/constants/response-message.enum.js';
@@ -118,23 +120,13 @@ export class OrganizationService implements IOrganizationService {
       if (org) {
         result.push({
           id: uo.id,
-          user_id: uo.user_id,
           organization_id: uo.organization_id,
           role: uo.role,
           is_active: uo.is_active,
-          joined_at: uo.joined_at,
-
           name: org.name,
           slug: org.slug,
           description: org.description,
-          email: org.email,
-          phone: org.phone,
-          website: org.website,
           logo_key: org.logo_key,
-          created_at: org.created_at,
-          updated_at: org.updated_at,
-
-          organization: org.toPublicJson(),
         });
       }
     }
@@ -144,9 +136,35 @@ export class OrganizationService implements IOrganizationService {
 
   async getOrganizationById(
     organizationId: string,
-  ): Promise<ReturnType<Organization['toPublicJson']> | null> {
+  ): Promise<OrganizationWithMembersDetails | null> {
     const org = await this.organizationRepository.findById(organizationId);
-    return org ? org.toPublicJson() : null;
+    if (!org) {
+      return null;
+    }
+
+    const userOrgs = await this.userOrganizationRepository.findByOrganizationId(organizationId);
+    const userIds = userOrgs.map((uo) => uo.user_id);
+    const users =
+      userIds.length > 0 ? await this.userRepository.find({ _id: { $in: userIds } }) : [];
+    const userMap = new Map();
+    for (const u of users) {
+      userMap.set(u.id, u);
+    }
+
+    const members: OrganizationMemberDetail[] = userOrgs.map((uo) => {
+      const u = userMap.get(uo.user_id);
+      return {
+        id: uo.id,
+        fullname: u ? u.fullname : 'Unknown',
+        role: uo.role,
+        is_active: uo.is_active,
+      };
+    });
+
+    return {
+      ...org.toPublicJson(),
+      members,
+    };
   }
 
   async addUserToOrganization(input: AddUserToOrganizationInput): Promise<UserOrganization> {

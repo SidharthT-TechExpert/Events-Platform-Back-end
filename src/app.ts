@@ -6,12 +6,14 @@ import { notFoundHandler } from '@/middleware/not-found.js';
 import { successResponse } from '@/shared/types/api-response.js';
 import authRoutes from '@/routes/auth.routes.js';
 import organizationRoutes from '@/routes/organization.routes.js';
+import morgan  from 'morgan';
 
 export const app = express();
 
 app.disable('x-powered-by');
 app.use(express.json());
 app.use(cookieParser());
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.get('/health', (_request, response) => {
   response.json(successResponse(RESPONSE_MESSAGE.HEALTH_CHECK_SUCCESS, { status: 'ok' }));

@@ -71,10 +71,12 @@ describe('OrganizationService', () => {
       ),
       findByUserId: vi.fn(),
       findByUserAndOrganization: vi.fn(),
+      findByOrganizationId: vi.fn(),
     };
 
     userRepo = {
       findById: vi.fn().mockResolvedValue(mockUser),
+      find: vi.fn().mockResolvedValue([mockUser]),
     };
 
     uow = {
@@ -125,28 +127,40 @@ describe('OrganizationService', () => {
     expect(result).toHaveLength(3);
 
     // Organization 1: ADMIN
-    expect(result[0]!.organization.name).toBe('Future Club');
-    expect(result[0]!.name).toBe('Future Club');
-    expect(result[0]!.slug).toBe('future-club');
-    expect(result[0]!.user_id).toBe('user-1');
-    expect(result[0]!.organization_id).toBe('org-1');
-    expect(result[0]!.role).toBe(OrgRole.ADMIN);
+    expect(result[0]).toEqual({
+      id: 'uo-1',
+      organization_id: 'org-1',
+      role: OrgRole.ADMIN,
+      is_active: true,
+      name: 'Future Club',
+      slug: 'future-club',
+      description: null,
+      logo_key: null,
+    });
 
     // Organization 2: EDITOR
-    expect(result[1]!.organization.name).toBe('Where Is My Event');
-    expect(result[1]!.name).toBe('Where Is My Event');
-    expect(result[1]!.slug).toBe('where-is-my-event');
-    expect(result[1]!.user_id).toBe('user-1');
-    expect(result[1]!.organization_id).toBe('org-2');
-    expect(result[1]!.role).toBe(OrgRole.EDITOR);
+    expect(result[1]).toEqual({
+      id: 'uo-2',
+      organization_id: 'org-2',
+      role: OrgRole.EDITOR,
+      is_active: true,
+      name: 'Where Is My Event',
+      slug: 'where-is-my-event',
+      description: null,
+      logo_key: null,
+    });
 
     // Organization 3: VIEWER
-    expect(result[2]!.organization.name).toBe('Kerala Tech Community');
-    expect(result[2]!.name).toBe('Kerala Tech Community');
-    expect(result[2]!.slug).toBe('kerala-tech-community');
-    expect(result[2]!.user_id).toBe('user-1');
-    expect(result[2]!.organization_id).toBe('org-3');
-    expect(result[2]!.role).toBe(OrgRole.VIEWER);
+    expect(result[2]).toEqual({
+      id: 'uo-3',
+      organization_id: 'org-3',
+      role: OrgRole.VIEWER,
+      is_active: true,
+      name: 'Kerala Tech Community',
+      slug: 'kerala-tech-community',
+      description: null,
+      logo_key: null,
+    });
   });
 
   it('strictly isolates organizations by user_id so user-2 never sees user-1 organizations', async () => {
@@ -169,5 +183,60 @@ describe('OrganizationService', () => {
     const user2Result = await service.getUserOrganizations('user-2');
     expect(user2Result).toHaveLength(0);
     expect(userOrgRepo.findByUserId).toHaveBeenCalledWith('user-2');
+  });
+
+  it('returns full organization details with members list and their proper roles', async () => {
+    const org = new Organization('org-1', 'Future Club', 'future-club', 'Official club');
+    (orgRepo.findById as any).mockResolvedValue(org);
+
+    const members = [
+      new UserOrganization('uo-1', 'user-1', 'org-1', OrgRole.ADMIN, true),
+      new UserOrganization('uo-2', 'user-2', 'org-1', OrgRole.EDITOR, true),
+    ];
+    (userOrgRepo.findByOrganizationId as any).mockResolvedValue(members);
+
+    const user1 = new User(
+      'user-1',
+      'Alice',
+      '1111111111',
+      'pass',
+      'alice@test.com',
+      null,
+      null,
+      true,
+      false,
+      UserRole.USER,
+    );
+    const user2 = new User(
+      'user-2',
+      'Bob',
+      '2222222222',
+      'pass',
+      'bob@test.com',
+      null,
+      null,
+      true,
+      false,
+      UserRole.USER,
+    );
+    (userRepo.find as any) = vi.fn().mockResolvedValue([user1, user2]);
+
+    const result = await service.getOrganizationById('org-1');
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('org-1');
+    expect(result!.name).toBe('Future Club');
+    expect(result!.members).toHaveLength(2);
+    expect(result!.members[0]).toEqual({
+      id: 'uo-1',
+      fullname: 'Alice',
+      role: OrgRole.ADMIN,
+      is_active: true,
+    });
+    expect(result!.members[1]).toEqual({
+      id: 'uo-2',
+      fullname: 'Bob',
+      role: OrgRole.EDITOR,
+      is_active: true,
+    });
   });
 });

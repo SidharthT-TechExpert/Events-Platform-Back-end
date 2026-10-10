@@ -5,6 +5,7 @@ import type {
   CreateOrganizationInput,
   AddUserToOrganizationInput,
   UserOrganizationDetails,
+  OrganizationWithMembersDetails,
 } from '@/domain/types/organization.types.js';
 
 export interface CreateOrganizationResult {
@@ -15,7 +16,7 @@ export interface CreateOrganizationResult {
 export interface IOrganizationService {
   createOrganization(userId: string, input: CreateOrganizationInput): Promise<CreateOrganizationResult>;
   getUserOrganizations(userId: string): Promise<UserOrganizationDetails[]>;
-  getOrganizationById(organizationId: string): Promise<ReturnType<Organization['toPublicJson']> | null>;
+  getOrganizationById(organizationId: string): Promise<OrganizationWithMembersDetails | null>;
   addUserToOrganization(input: AddUserToOrganizationInput): Promise<UserOrganization>;
   getUserOrganizationRole(userId: string, organizationId: string): Promise<UserOrganization | null>;
 }
